@@ -184,6 +184,8 @@ class main():
                                                  width='stretch', key=self.keys[2], 
                                                  disabled=False, label_visibility='hidden')
         st.space('xxsmall')
+        #int(self.size*0.95)
+        st.write(int(self.size*0.95))
         with st.container(border=4):
             pg = pdf_viewer(self.fileOut,
                        width=int(self.size*0.95),
@@ -229,4 +231,5 @@ class main():
                 self.fileOutFiles = objSave.pdfToPdf(self.down, name)[0]
         
 if __name__ == '__main__':
+
     main()
