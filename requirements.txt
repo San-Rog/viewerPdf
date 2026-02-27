@@ -1,6 +1,7 @@
 streamlit
 pymupdf==1.26.3
 streamlit_pdf_viewer
-PIL==11.3.0
+pillow==11.3.0
 streamlit_js_eval
+
 
