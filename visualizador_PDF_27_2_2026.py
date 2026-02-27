@@ -188,7 +188,7 @@ class main():
         st.write(int(self.size*0.95))
         with st.container(border=4):
             pg = pdf_viewer(self.fileOut,
-                       width=int(self.size*0.95),
+                       width=900, 
                        height=1000,
                        zoom_level=1.0,                    
                        viewer_align='center',             
@@ -233,3 +233,4 @@ class main():
 if __name__ == '__main__':
 
     main()
+
