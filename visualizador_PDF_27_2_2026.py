@@ -184,11 +184,9 @@ class main():
                                                  width='stretch', key=self.keys[2], 
                                                  disabled=False, label_visibility='hidden')
         st.space('xxsmall')
-        #int(self.size*0.95)
-        st.write(int(self.size*0.95))
         with st.container(border=4):
             pg = pdf_viewer(self.fileOut,
-                       width=900, 
+                       width=int(self.size*0.95), 
                        height=1000,
                        zoom_level=1.0,                    
                        viewer_align='center',             
@@ -233,4 +231,5 @@ class main():
 if __name__ == '__main__':
 
     main()
+
 
