@@ -6,13 +6,20 @@ from streamlit_pdf_viewer import pdf_viewer
 from PIL import Image
 from streamlit_js_eval import streamlit_js_eval
 
+class messages():
+    def __init__(self, status=None):    
+        pass    
+    
+    @st.dialog('⚠️ Falha no app❗')
+    def mensError(self, str):
+        st.markdown(f'{str} Entre em contato com o administrador da ferramenta!')
+    
 class saveFiles():
     def __init__(self, down):
         self.down = down
         
     @st.cache_data
     def imgToPdf(_self, *args):
-        st.session_state.multFiles = []
         down = args[0]
         name = args[1]
         ext = args[2]
@@ -28,72 +35,58 @@ class saveFiles():
         image.save(fileOut)
         doc = pymupdf.open(fileOut)
         nPages = len(doc)
-        st.session_state.sizeImg = nPages
         doc.close()
-        st.session_state.multFiles.append(fileOut)
-        return fileOut
+        return(fileOut, nPages)
     
     @st.cache_data    
     def pdfToBytes(_self, down):
-        st.session_state.multBytes = []
         bytesData = down.getvalue()
         fileProv = 'prov.pdf'
         with open(fileProv, 'wb') as f:
             f.write(bytesData)
         doc = pymupdf.open(fileProv)
         nPages = len(doc)
-        st.session_state.sizeImg = nPages
         doc.close()
-        st.session_state.multBytes.append(bytesData)        
-        return bytesData
-        
-    @st.cache_data
-    def pdfToPdf(_self, *args):
-        st.session_state.multFiles = []
-        down = args[0]
-        name = args[1]
-        allPdfBytes = []
-        bytesData = down.getvalue()
-        fileProv = f'{name}.pdf'
-        with open(fileProv, 'wb') as f:
-            f.write(bytesData)
-        doc = pymupdf.open(fileProv)
-        nPages = len(doc)
-        st.session_state.sizeImg = nPages
-        for n in range(nPages):
-            fileOut = f'{name}_page_{n+1}.pdf'
-            st.session_state.multFiles.append(fileOut)
-            doc.select([n])
-            doc.save(fileOut)
-            doc.close()
-            with open(fileOut, 'rb') as filePdf:
-                pdfBytes = filePdf.read()
-            allPdfBytes.append(pdfBytes)
-            doc = pymupdf.open(fileProv)
-        return allPdfBytes
+        return(bytesData, nPages)      
         
 class main():
     def __init__(self):
+        self.setPage()
         self.initiaSession()
         self.widgetsStructure()
+        
+    def setPage(self):
+        st.set_page_config(
+        page_title='Leitor simples de PDF',
+        page_icon='🕮',
+        layout='wide')   
+        with open('configCssNew.css') as f:
+            css = f.read()
+        st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
                 
     def initiaSession(self):
         st.set_page_config(layout="wide")    
         self.size = streamlit_js_eval(js_expressions='window.innerWidth', key='WIDTH')
         self.keys = ['vert', 'horiz', 'control', 'slider', 'inpt', 'butt']
         self.fullSession()       
-        self.extImg = ['png', 'ico', 'jpg']
+        self.extImg = ['png', 'ico', 'jpg', 'gif', 'bmp', 'tif']
         self.extPdf = ['pdf']
-        self.extImgPlus = self.extImg + self.extPdf
+        self.labels = ['📚 Seleção ou arrastamento de arquivos', 
+                       'Vertical', 'Horizontal', 
+                       'páginaI', 'paginaS']
+        self.extImgPlus = sorted(self.extImg + self.extPdf)
         self.exts = sorted(self.extImg)
         self.nKeys = len(self.keys)
+        self.pgsFile = 1
+        self.reader = True
         self.controlMap = {
             0: ':material/last_page:',
             1: ':material/chevron_forward:',
             2: ':material/chevron_backward:',
             3: ':material/first_page:',
+            4: ':material/rotate_left:', 
+            5: ':material/rotate_right:'
         }
-        
         
     def fullSession(self):
         self.keys = ['vert', 'horiz', 'control', 'slider', 'inpt']
@@ -103,99 +96,104 @@ class main():
         for self.key in self.keys[3:5]:
             if self.key not in st.session_state:
                 st.session_state[self.key] = 0
-        if 'sizeImg' not in st.session_state:
-            st.session_state.sizeImg = 0
-        for key in ['multFiles', 'multBytes']:
-            if key not in st.session_state:
-                st.session_state[key] = []
-        
+            
     def widgetsStructure(self):
         with st.container(border=4):
-            colDown, colButts = st.columns([18, 14], vertical_alignment='center')
-            self.down = colDown.file_uploader(label='📚 Seleção ou arrastamento de arquivos', 
+            colDown, colButts = st.columns([17, 13], vertical_alignment='center')
+            self.down = colDown.file_uploader(label=self.labels[0], 
                                               accept_multiple_files=False, 
                                               type=self.extImgPlus, 
                                               max_upload_size=1024*20, 
                                               width='stretch', 
                                               label_visibility='hidden')
-            self.checkDisab(0)            
+            st.space('xxsmall')
+            self.checkDisab(0)  
             with colButts:
-                colVert, colHoriz, colInpt = st.columns([2.5, 2.5, 3], vertical_alignment='center')
+                colVert, colHoriz, colInpt = st.columns([4.1, 4.1, 3.7], vertical_alignment='center')
                 with colVert:
                     st.space(size="small")
-                    self.vert = colVert.checkbox('Vertical', key=self.keys[0], 
+                    self.vert = colVert.checkbox(label=self.labels[1], key=self.keys[0], 
                                                  width='stretch', disabled=self.disabs[0], 
-                                                 on_change=self.changeCheck, args=('a'))
+                                                 on_change=self.changeCheck, args=('a'), 
+                                                 help='Todas as páginas do arquivo são exibidas na tela com paginação vertical.')
                 with colHoriz:
                     st.space(size="small")
-                    self.horiz = colHoriz.checkbox('Horizontal', key=self.keys[1], 
+                    self.horiz = colHoriz.checkbox(label=self.labels[2], key=self.keys[1], 
                                                    width='stretch', disabled=self.disabs[1], 
-                                                   on_change=self.changeCheck, args=('b'))
-                if st.session_state.sizeImg == 0:
-                    maxVal = None
-                else:
-                    maxVal = st.session_state.sizeImg
-                self.inpt = colInpt.number_input('página', min_value=0, max_value=maxVal, key=self.keys[4], 
+                                                   on_change=self.changeCheck, args=('b'), 
+                                                   help='É exibida na tela uma página por vez.')
+                self.inpt = colInpt.number_input(self.labels[3], min_value=0, max_value=self.pgsFile, key=self.keys[4], 
                                                  width='stretch', on_change=self.changeInput, 
                                                  disabled=self.disabs[4], label_visibility='hidden')
-                self.sld = st.slider('Página', min_value=0, max_value=maxVal, key=self.keys[3], 
-                                          width='stretch', on_change=self.changeSlider, 
-                                          disabled=self.disabs[3], label_visibility='hidden')                
+                self.sld = st.slider(self.labels[4], min_value=0, max_value=self.pgsFile, key=self.keys[3], 
+                                     width='stretch', on_change=self.changeSlider, 
+                                     disabled=self.disabs[3], label_visibility='hidden')
         self.checkDisab(1) 
         st.space('xxsmall')
                                                  
     def checkDisab(self, mode):
         if mode == 0:
             if self.down:
-                self.extractElems()
-                self.disabs = [False for w in range(2)]
-                self.disabs += [True for w in range(2, self.nKeys)]
+                try:
+                    self.extractElems()
+                    self.disabs = [False for w in range(2)]
+                    self.disabs += [True for w in range(2, self.nKeys)]
+                except Exception as error:
+                    exprError = (f'Na tentativa de ler o arquivo, aconteceu o seguinte erro: \n'
+                                 f':blue[**{error}**].')
+                    objMens = messages()
+                    objMens.mensError(exprError)
+                    self.reader = False
+                    self.disabs = [True for w in range(self.nKeys)]
             else:
-                for key in ['multFiles', 'multBytes']:
-                    st.session_state[key] = []
                 st.session_state[self.keys [0]] = False
                 st.session_state[self.keys [1]] = False
                 st.session_state[self.keys [3]] = 0
                 st.session_state[self.keys [4]] = 0
                 self.disabs = [True for w in range(self.nKeys)]
-            if any([st.session_state[self.keys[0]], st.session_state[self.keys[1]]]):
-                self.disabs[3] = False
-                self.disabs[4] = False                
+            if self.reader:
+                if self.pgsFile == 1:
+                    self.disabs[0] = True
+                else:
+                    self.disabs[0] = False
+                if any([st.session_state[self.keys[0]], st.session_state[self.keys[1]]]):
+                    self.disabs[3] = False
+                    self.disabs[4] = False
         elif mode == 1:
             valSld = st.session_state[self.keys [3]]
             valInp = st.session_state[self.keys[4]]
             if any([valSld > 0, valInp > 0]):
                 statusVert = st.session_state[self.keys[0]]
                 statusHoriz = st.session_state[self.keys[1]]
+                self.page = valSld
+                self.pageRender = []
+                self.pageRender = [w+1 for w in range(self.pgsFile)]
+                if len(self.fileOutImg.strip()) == 0:
+                    self.fileOut = self.fileOutPdf
+                else:
+                    self.fileOut = self.fileOutImg
                 if statusVert:
-                    try:
-                        self.page = valSld
-                        self.fileOut = self.fileOutBytes
-                        self.showImg()
-                    except:
-                        pass
+                    self.showImg()
+                if statusHoriz: 
+                    if self.fileOut == self.fileOutPdf:
+                        self.fileOut = self.fileOutPdf
+                        self.pageRender = [valSld]
+                    self.showImg()
     
     def showImg(self):    
-        #st.space('small')
-        with st.container(border=None, vertical_alignment='bottom'):
-            self.control = st.segmented_control('Fluxo de páginas', 
-                                                 options=self.controlMap.keys(), 
-                                                 format_func=lambda option: self.controlMap[option],
-                                                 width='stretch', key=self.keys[2], 
-                                                 disabled=False, label_visibility='hidden')
         st.space('xxsmall')
         with st.container(border=4):
-            pg = pdf_viewer(self.fileOut,
-                       width=int(self.size*0.95), 
+            pdf_viewer(self.fileOut,
+                       width=int(self.size*0.95),
                        height=1000,
                        zoom_level=1.0,                    
                        viewer_align='center',             
                        show_page_separator=True, 
+                       pages_to_render=self.pageRender,
                        render_text=True,
                        pages_vertical_spacing=10, 
                        annotation_outline_size=3, 
                        scroll_to_page=self.page)
-            st.write(pg)
         
     def changeCheck(self, numOne):
         if numOne == 'a':
@@ -223,13 +221,14 @@ class main():
             extStr = ext.replace('.', '').strip().lower()
             objSave = saveFiles(self.down)
             if extStr in self.extImg: 
-                self.fileOut = objSave.imgToPdf(self.down, name, ext, self.down)
+                self.fileOutImg, nPags = objSave.imgToPdf(self.down, name, ext, self.down)
+            else:
+                self.fileOutImg = ''
             if extStr in self.extPdf:
-                self.fileOutBytes = objSave.pdfToBytes(self.down)
-                self.fileOutFiles = objSave.pdfToPdf(self.down, name)[0]
+                self.fileOutPdf, nPags = objSave.pdfToBytes(self.down)
+            else:
+                self.fileOutPdf = ''
+            self.pgsFile = nPags
         
-if __name__ == '__main__':
-
+if __name__ == '__main__':  
     main()
-
-
