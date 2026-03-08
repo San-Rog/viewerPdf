@@ -74,6 +74,12 @@ class main():
         self.labels = ['📚 Seleção ou arrastamento de arquivos', 
                        'Vertical', 'Horizontal', 
                        'páginaI', 'paginaS']
+        self.helps = [('Todas as páginas do arquivo são exibidas na tela com paginação '
+                       'vertical. A visualização só ocorrerá com indicação da página inicial, ' 
+                       'feita usando a caixa numérica ou o botão deslizante.'), 
+                      ('É exibida na tela uma página por vez. A visualização só ocorrerá com '
+                       'indicação da página específica, feita usando a caixa numérica '
+                       'ou o botão deslizante.')]
         self.extImgPlus = sorted(self.extImg + self.extPdf)
         self.exts = sorted(self.extImg)
         self.nKeys = len(self.keys)
@@ -115,13 +121,13 @@ class main():
                     self.vert = colVert.checkbox(label=self.labels[1], key=self.keys[0], 
                                                  width='stretch', disabled=self.disabs[0], 
                                                  on_change=self.changeCheck, args=('a'), 
-                                                 help='Todas as páginas do arquivo são exibidas na tela com paginação vertical.')
+                                                 help=self.helps[0])
                 with colHoriz:
                     st.space(size="small")
                     self.horiz = colHoriz.checkbox(label=self.labels[2], key=self.keys[1], 
                                                    width='stretch', disabled=self.disabs[1], 
                                                    on_change=self.changeCheck, args=('b'), 
-                                                   help='É exibida na tela uma página por vez.')
+                                                   help=self.helps[1])
                 self.inpt = colInpt.number_input(self.labels[3], min_value=0, max_value=self.pgsFile, key=self.keys[4], 
                                                  width='stretch', on_change=self.changeInput, 
                                                  disabled=self.disabs[4], label_visibility='hidden')
@@ -232,4 +238,5 @@ class main():
         
 if __name__ == '__main__':  
     main()
+
 
