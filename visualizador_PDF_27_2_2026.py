@@ -186,7 +186,7 @@ class main():
             pdf_viewer(self.fileOut,
                        width=int(self.size*0.95),
                        height=1000,
-                       zoom_level=1.0,                    
+                       zoom_level='auto',                     
                        viewer_align='center',             
                        show_page_separator=True, 
                        pages_to_render=self.pageRender,
@@ -232,3 +232,4 @@ class main():
         
 if __name__ == '__main__':  
     main()
+
