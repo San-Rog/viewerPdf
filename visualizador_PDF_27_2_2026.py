@@ -160,6 +160,7 @@ class main():
             if self.reader:
                 if self.pgsFile == 1:
                     self.disabs[0] = True
+                    st.session_state[self.keys[0]] = False 
                 else:
                     self.disabs[0] = False
                 if any([st.session_state[self.keys[0]], st.session_state[self.keys[1]]]):
@@ -238,5 +239,6 @@ class main():
         
 if __name__ == '__main__':  
     main()
+
 
 
